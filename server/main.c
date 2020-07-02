@@ -11,7 +11,7 @@
 
 #define BDPORTNUM 9005
 #define TPPORTNUM 9000
-#define BROADNUM 10
+#define BROADNUM 100
 #define NODENUM 2
 
 int main(void) {
@@ -21,7 +21,7 @@ int main(void) {
     struct timeval tv;
     int min_offset = 0, offset = 0, optval = 1;
     int bd, sd, nsd[NODENUM], min, iter = 0, clen = sizeof(cli);
-    int32_t offset_time = 0, offset_utime = 0, loc_time[NODENUM][BROADNUM], loc_utime[NODENUM][BROADNUM], timelen[NODENUM], My_time[NODENUM][BROADNUM], My_utime[NODENUM][BROADNUM];
+    int32_t offset_time = 0, offset_utime = 0, loc_time[NODENUM][BROADNUM], loc_utime[NODENUM][BROADNUM], My_time[NODENUM][BROADNUM], My_utime[NODENUM][BROADNUM];
 
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1){ //TCP socket을 생성(연결 성공시 0을 리턴 실패시 -1을 리턴)
         perror("TCP socket");
@@ -126,10 +126,6 @@ int main(void) {
     for (int n = 0; n < NODENUM; n++) {
         close(sd);
                 
-        if (recv(nsd[n], &timelen[n], sizeof(timelen), 0) == -1) {
-            perror("recv");
-            exit(1);
-        }
         if (recv(nsd[n], loc_time[n], sizeof(loc_time[n])+1, 0) == -1) {
             perror("recv");
             exit(1);
@@ -138,7 +134,10 @@ int main(void) {
             perror("recv");
             exit(1);
         }
-        for (int i = 0; i < timelen[n]; i++) {
+    }
+
+    for (int n = 0; n < NODENUM; n++) {
+        for (int i = 0; i < BROADNUM; i++) {
             printf("%i-th client %i-th stamp: %d.%d\n", n+1, i+1, loc_time[n][i], loc_utime[n][i]);
         }
     }

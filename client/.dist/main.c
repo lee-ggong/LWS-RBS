@@ -12,15 +12,14 @@
 
 #define BDPORTNUM 9005
 #define TPPORTNUM 9000
-#define BROADNUM 10
+#define BROADNUM 100
 
 int main(void) {
     char buf[256], endst[50] = "END", myIP[INET_ADDRSTRLEN];
     struct sockaddr_in brd, sin, myAddr;
-    struct ifaddrs *id;
     struct timeval tv_cli, current;
     int32_t offset_time, offset_utime, loc_time[BROADNUM], loc_utime[BROADNUM]; 
-    int bd, sd, n, index, val, brdlen = sizeof(brd);
+    int bd, sd, n, index, val, brdlen = sizeof(brd), errn, optval = 1;
 
     while (1) {
 
@@ -34,9 +33,11 @@ int main(void) {
         sin.sin_port = htons(TPPORTNUM); 
         sin.sin_addr.s_addr = inet_addr("192.168.0.159"); //소켓 주소 구조체에 서버의 주소를 지정
 
-        if (connect(sd, (struct sockaddr *)&sin, sizeof(sin))) {
-            perror("connect");
-            exit(1);
+        while (1) {
+            errn = connect(sd, (struct sockaddr *)&sin, sizeof(sin));
+            if (errn == 0) {
+                break;
+            }
         }
 
         if (recv(sd, myIP, sizeof(myIP) + 1, 0) == -1) {
@@ -57,6 +58,11 @@ int main(void) {
         brd.sin_family = AF_INET; //socket family를 AF_INET으로 지정
         brd.sin_port = htons(BDPORTNUM); 
         brd.sin_addr.s_addr = inet_addr(myIP); //소켓 주소 구조체에 서버의 주소를 지정
+
+        if ((setsockopt(bd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))) == -1){ //사용중인 포트 재사용 옵션
+            perror("setsockopt");
+            exit(1);
+        }
 
         if (bind(bd, (struct sockaddr *)&brd, sizeof(brd))) { 
             perror("bind");
@@ -102,10 +108,6 @@ int main(void) {
         printf("END BRD\n");
 
     // Time stamp phase
-        if ((send(sd, &timelen, sizeof(timelen), 0)) == -1) {
-            perror("send");
-            exit(1);
-        }
         if ((send(sd, &loc_time[0], sizeof(loc_time)+1, 0)) == -1) {
             perror("send");
             exit(1);
